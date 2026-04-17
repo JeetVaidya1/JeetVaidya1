@@ -6,6 +6,25 @@ CS at UBC (Kelowna), graduating 2027. I design, build, and ship production web s
 
 ## Selected Projects
 
+### [iClicker Poll Notifier](https://github.com/JeetVaidya1/iclicker-notifier) — Published Chrome Extension · 220+ active users
+Manifest V3 Chrome extension that fires instant desktop, audio, and Telegram push notifications the moment a professor opens an iClicker poll. Published to the Chrome Web Store. Used live in lecture halls by 220+ students.
+
+- **Four independent poll-detection layers** running in parallel for fault tolerance — no single method covers every edge case, so every detector runs concurrently and the first to fire wins:
+  1. **WebSocket frame interception** — hooks into iClicker's real-time socket protocol to catch server-pushed poll events as they arrive
+  2. **URL change monitoring** — watches for `/poll` and `/question/` path transitions via the History API
+  3. **DOM `MutationObserver`** — watches for poll-related elements (timers, answer options, submit buttons) being mounted into the page
+  4. **Text-pattern matching** — scans for phrases like "answer now" and "time remaining" as a last-resort detector
+- **Collaborative peer detection network** — one student's successful detection fans out as a Telegram push to every other student in the same class session. Course and activity IDs are parsed from the iClicker URL at page load, the extension auto-registers the user in that session, and when any peer's detection fires the backend broadcasts to everyone in the session. Turns each user's weakness into the network's strength: if your internet lags, a classmate's detector still saves you.
+- **Manifest V3 service worker architecture** — background logic runs as an ephemeral service worker (no persistent background page under MV3), with a `chrome.offscreen` document spawned on demand just for audio playback to work around the MV3 audio restriction. Service worker wake-up is handled via session heartbeat messages so the broadcast pipeline stays connected.
+- **Cloudflare Workers + KV backend** — the broadcast layer is fully serverless: session registry in KV, heartbeat keepalive, Telegram Bot API for push delivery, HMAC-verified webhooks. Sessions auto-expire on a 6–10 hour TTL so stale data self-cleans without a cron.
+- **Telegram account linking** — 6-digit OTP flow with a 10-minute expiry. User messages `@IclickerNotificationBot`, receives a code, pastes it into the extension popup, and the `chat_id` is bound to their session for future pushes.
+- **Chrome Web Store listing** — passed Chrome's MV3 review with scoped host permissions (iClicker domains only) and a public privacy policy explaining every data field captured.
+- **Privacy-first by design** — no credentials captured, no poll answers read, no grades accessed, no personal info collected. The only data that leaves the device is the Telegram chat ID and the course/activity IDs needed to route notifications. Uninstalling the extension clears all local data.
+- **State tracking** — still detects new polls while the user is reviewing a previous question's results (common case where naive detectors get confused by the "active poll" UI state already being visible).
+- **Debug surface** — "Scan Page for Poll Elements" tool in the popup UI exposes what every detector sees on the current page, so support/debug can isolate which layer is firing and which isn't.
+- **"LIVE" badge** — red badge overlay on the extension icon when a poll is active, providing at-a-glance status without opening the popup.
+- **Chrome autoplay workaround** — audio alerts route through the offscreen document with fallback to visual notification when Chrome's autoplay policy blocks sound before any user interaction with the page.
+
 ### [Vindexa](https://github.com/JeetVaidya1/vindexa) — AI Assessment Platform
 Live at [vindexa.org](https://vindexa.org). AI assessment generator for course creators and L&D teams: upload content, auto-generate graded assessments, publish shareable links, get per-topic analytics.
 
@@ -45,13 +64,6 @@ Personal study assistant that ingests Canvas course materials and grounds genera
 - **Generation**: OpenAI GPT-4 with citations tracing each generated question back to the source chunk it was derived from
 - **Stack**: Python, FastAPI, uvicorn, TypeScript frontend
 
-### [iClicker Poll Notifier](https://github.com/JeetVaidya1/iclicker-notifier) — Chrome Extension · 220+ active users
-Manifest V3 extension that fires instant desktop + Telegram notifications the moment a professor opens a poll.
-
-- **Four independent detection layers** for fault tolerance: WebSocket frame interception, DOM mutation observation, URL change monitoring, and text-pattern matching. If any single method fails, the others still fire
-- **Peer broadcast network**: one student's poll capture triggers Telegram alerts for all connected peers via a Cloudflare Workers + KV backend, eliminating single-point-of-failure detection
-- Published to the Chrome Web Store
-
 ### [IntakeOS](https://github.com/JeetVaidya1/IntakeOS) — AI Customer Intake Agent
 Embedded conversational agent for business websites with an explicit 5-layer reasoning architecture separating the language model from the control logic.
 
@@ -66,8 +78,11 @@ Embedded conversational agent for business websites with an explicit 5-layer rea
 
 ## Engineering Capabilities
 
+**Production Shipping & User-Facing Products**
+Published a Manifest V3 Chrome extension through the Chrome Web Store review process and operate it in production for 220+ active users, including the peer broadcast network that keeps their detection reliable even when individual browsers miss the poll event. Shipped Vindexa to production at vindexa.org with Stripe billing and tiered plans. Phantom Defender's 280-test suite covers auth, payments, encryption, and email-routing paths.
+
 **Full-Stack Web Applications**
-Shipped production SaaS end to end: Supabase-backed PostgreSQL with Row Level Security + per-user ownership checks, Stripe subscription billing with signature-verified webhooks, client-side AES-256-GCM zero-knowledge encryption, and 280+ tests covering auth, payments, encryption, and email-routing paths (Phantom Defender).
+Designed and shipped production SaaS end to end: Supabase-backed PostgreSQL with Row Level Security + per-user ownership checks, Stripe subscription billing with signature-verified webhooks, client-side AES-256-GCM zero-knowledge encryption, and comprehensive test coverage across auth, payments, and data paths.
 
 **Python Backend Engineering (FastAPI + PostgreSQL)**
 Built Vindexa as a multi-tenant FastAPI application: pydantic-settings configuration, JWT bearer auth with API-key fallback, per-resource ownership checks as defense-in-depth alongside RLS, rate limiting, pgvector for embeddings, Stripe billing with signature-verified webhooks, 42 routes and 113 tests.
@@ -78,11 +93,14 @@ Built Jarvis as an always-on agent runtime with the Anthropic SDK embedded direc
 **Retrieval-Augmented Generation**
 Designed per-tenant RAG pipelines in Vindexa and Canvas AI Assistant with contextual chunking, FAISS and pgvector for retrieval, model routing that selects GPT-5 or GPT-5-mini per task complexity, and citation-tracing so every generated answer links back to the source chunks it was derived from. Implemented in-process embeddings for Jarvis using `@huggingface/transformers` with `all-MiniLM-L6-v2` ONNX for zero-infra semantic search.
 
+**Browser Extensions & Edge Runtimes**
+Ship-worthy Manifest V3 Chrome extension with service worker architecture, `chrome.offscreen` document for audio playback within MV3 constraints, multi-layered detection running in parallel, and a Cloudflare Workers + KV serverless backend with HMAC-verified webhooks and TTL-based session cleanup.
+
 **Service Architecture & Async Coordination**
 Jarvis runs a WebSocket gateway with a typed discriminated-union protocol, an embedded agent runtime, a trading engine, a scheduled-job system (node-cron), a webhook ingress server (HMAC-verified), and a real-time dashboard (Express + SSE) — all coordinated through a shared event bus with cross-module pub/sub. Designed the `channel → gateway → runtime → tools` layering so Telegram, the dashboard, voice, and external clients are all equivalent adapters.
 
 **Production Operations**
-Shipped a Chrome extension to 220+ active users with four independent detection layers for fault tolerance. Operate Jarvis via launchd with auto-start on boot and crash recovery, HMAC-verified webhooks, structured logging to daily log files, and a 30-minute heartbeat health check. Phantom Defender includes append-only audit logging with 90-day retention, rate limiting on every endpoint, and an emergency-nuke account-destruction flow with a 30-day recovery window.
+Operate Jarvis under launchd with auto-start on boot and crash recovery, HMAC-verified webhooks, structured logging to daily log files, and a 30-minute heartbeat health check. Phantom Defender includes append-only audit logging with 90-day retention, rate limiting on every endpoint, and an emergency-nuke account-destruction flow with a 30-day recovery window.
 
 **AI-Native Development Workflow**
 I treat the Anthropic SDK, Claude Code, and MCP as first-class engineering primitives. I build agent pipelines with scoped context, subprocess tools wrapped in structured JSON schemas, and explicit review gates before merge. Phantom Defender is built on a 3-agent CI pipeline (feature-builder / security-auditor / test-runner). Jarvis ships with an MCP server exposing its tool surface to Claude Code and a `claude_code` tool for delegating to sub-sessions. My development loop is designing the context, the tools, and the failure modes — the model handles the line-by-line.
