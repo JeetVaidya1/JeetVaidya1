@@ -56,6 +56,24 @@ Self-hosted autonomous agent running on a MacBook Pro under launchd. Controlled 
 - **Dashboard**: Express + SSE command surface on port 4242 with live agent stream, activity feed, system stats (CPU / memory / disk / network), portfolio widget, iMessage feed, drag-and-drop persistent widget layout
 - **Operations**: launchd daemon with auto-start on boot and crash recovery, HMAC-verified webhook ingress, scheduled autonomous programs (morning briefing, portfolio reviews, end-of-day summary, weekly outcome review), structured logging to daily log files
 
+### [git-gud](https://github.com/tysonLivadney/COSC310-Project-Git_gud) — Food Delivery Platform · Team Project (COSC 310)
+Full-stack food ordering and delivery platform built with a **9-person team** over a semester-long Software Engineering course under an agile / scrum SDLC. Deployed via Docker Compose with separated backend and frontend services.
+
+- **Stack (matches the common production FastAPI + React + Docker + GitHub Actions stack)**: FastAPI + Pydantic + Uvicorn + pytest on the backend, React 19 + Vite + React Router + axios on the frontend, Dockerized for local dev, GitHub Actions CI with Ruff linting and pytest-cov coverage reporting on every push and PR
+- **Architecture**: 15 API router modules (`admin`, `auth`, `delivery`, `drivers`, `menus`, `menu_items`, `orders`, `order_total`, `payment`, `promo_codes`, `restaurants`, `reviews`, `location`, `notifications`) layered into `routers → services → repositories → schemas` with separated unit and integration test suites
+- **Authentication**: salted PBKDF2-HMAC password hashing, bearer tokens with server-side session expiry, role-based authorization across `user / owner / manager / driver`
+- **13 authored PRs** — my core contributions:
+  - Order creation and management (`#58`) — the foundation of the ordering flow
+  - Admin subsystem and endpoint tests (`#71`, `#81`)
+  - Admin analytics report (`#92`) — average delivery time per driver and highest-rated restaurants, implemented with Pandas aggregations
+  - Driver accounts and profile system (`#101`)
+  - Auto-assign available driver algorithm (`#111`)
+  - Promo code / discount system (`#139`, `#143`) — backend pricing logic and frontend display across checkout, orders list, and order detail
+  - Order endpoint test coverage (`#104`)
+  - Structural refactors: split payment from pricing (`#119`), extracted address lookup into its own module for single-responsibility (`#117`), introduced a `DriverStatus` enum replacing magic strings (`#112`), reorganized orders and admin services (`#105`)
+- **Maintainer role**: merged 11 teammate PRs into `main` as a code reviewer, responsible for gating changes through CI and team review before they land
+- **CI pipeline** (`.github/workflows/ci.yml`): runs Ruff on critical error patterns (`E9, F63, F7, F82`), pytest with `--cov` generating `coverage.xml`, artifact upload on every build
+
 ### [Canvas AI Assistant](https://github.com/JeetVaidya1/canvas-ai-assistant) — Multimodal RAG for Canvas LMS
 Personal study assistant that ingests Canvas course materials and grounds generated quizzes, notes, practice problems, and full exam simulations in citable source chunks.
 
@@ -85,7 +103,7 @@ Published a Manifest V3 Chrome extension through the Chrome Web Store review pro
 Designed and shipped production SaaS end to end: Supabase-backed PostgreSQL with Row Level Security + per-user ownership checks, Stripe subscription billing with signature-verified webhooks, client-side AES-256-GCM zero-knowledge encryption, and comprehensive test coverage across auth, payments, and data paths.
 
 **Python Backend Engineering (FastAPI + PostgreSQL)**
-Built Vindexa as a multi-tenant FastAPI application: pydantic-settings configuration, JWT bearer auth with API-key fallback, per-resource ownership checks as defense-in-depth alongside RLS, rate limiting, pgvector for embeddings, Stripe billing with signature-verified webhooks, 42 routes and 113 tests.
+Built Vindexa as a multi-tenant FastAPI application: pydantic-settings configuration, JWT bearer auth with API-key fallback, per-resource ownership checks as defense-in-depth alongside RLS, rate limiting, pgvector for embeddings, Stripe billing with signature-verified webhooks, 42 routes and 113 tests. Same backend stack (FastAPI + Pydantic + Uvicorn + pytest + Ruff) shipped on a 9-person team in COSC 310 with a production-style GitHub Actions CI pipeline.
 
 **AI Agent Architecture**
 Built Jarvis as an always-on agent runtime with the Anthropic SDK embedded directly in-process. Implemented streaming with token-by-token tool visibility, cancellable execution via propagated `AbortController`, tool-loop detection, automatic exponential-backoff retries for 429/5xx, and a tool registry routing across 57 tools. Exposed the entire tool surface over MCP for Claude Code interoperability.
@@ -95,6 +113,9 @@ Designed per-tenant RAG pipelines in Vindexa and Canvas AI Assistant with contex
 
 **Browser Extensions & Edge Runtimes**
 Ship-worthy Manifest V3 Chrome extension with service worker architecture, `chrome.offscreen` document for audio playback within MV3 constraints, multi-layered detection running in parallel, and a Cloudflare Workers + KV serverless backend with HMAC-verified webhooks and TTL-based session cleanup.
+
+**Team Engineering & Agile Collaboration**
+Shipped git-gud (COSC 310 food delivery platform) with a 9-person team under an agile / scrum SDLC: 13 authored PRs spanning order creation, the admin subsystem with Pandas-driven analytics, driver accounts with an auto-assignment algorithm, promo code pricing across backend and frontend, and four structural refactors (splitting responsibilities, extracting modules, introducing enums, reorganizing services). Served as a maintainer: merged 11 teammate PRs into `main`, gating changes through a CI pipeline (Ruff + pytest + coverage artifact) before they landed.
 
 **Service Architecture & Async Coordination**
 Jarvis runs a WebSocket gateway with a typed discriminated-union protocol, an embedded agent runtime, a trading engine, a scheduled-job system (node-cron), a webhook ingress server (HMAC-verified), and a real-time dashboard (Express + SSE) — all coordinated through a shared event bus with cross-module pub/sub. Designed the `channel → gateway → runtime → tools` layering so Telegram, the dashboard, voice, and external clients are all equivalent adapters.
@@ -109,21 +130,25 @@ I treat the Anthropic SDK, Claude Code, and MCP as first-class engineering primi
 
 ## Stack
 
-**Languages** · TypeScript, Python, JavaScript, Java, SQL, C/C++, Bash
+**Languages** · TypeScript, Python, JavaScript, Java, SQL, C/C++, Bash, R
 
-**Backend** · FastAPI, Next.js API Routes, Express, Node.js 22, Spring Boot
+**Backend** · FastAPI, Pydantic (v2) + pydantic-settings, Uvicorn, Starlette, SlowAPI (rate limiting), Next.js API Routes, Express, Node.js 22, Spring Boot
 
-**Frontend** · Next.js 14 (App Router), React 18, Tailwind, Vite, Chrome Extensions (Manifest V3)
+**Frontend** · React 18 & 19, Next.js 14 (App Router), Vite, React Router, Tailwind, axios, react-hot-toast, Chrome Extensions (Manifest V3)
 
-**Databases** · PostgreSQL (Supabase + RLS), pgvector, FAISS, SQLite (+ sqlite-vec), Redis, MongoDB
+**Databases & Storage** · PostgreSQL (Supabase + Row Level Security), pgvector, Redis, FAISS, SQLite (+ sqlite-vec), MongoDB, JSON-file repositories, Cloudflare KV
 
-**AI / ML** · Anthropic SDK (streaming, tool use, vision, MCP), OpenAI SDK (GPT-4o / GPT-5, embeddings), `@huggingface/transformers` (in-process ONNX), LangChain, PyTorch, TensorFlow
+**AI / ML** · Anthropic SDK (streaming, tool use, vision, MCP server), OpenAI SDK (GPT-4o / GPT-5, embeddings), `@huggingface/transformers` (in-process ONNX), LangChain, PyTorch, TensorFlow, scikit-learn, Pandas, NumPy
 
-**Cloud & Infra** · AWS, Docker, Cloudflare (Workers, KV, Email Routing), Vercel, Supabase, GitHub Actions CI/CD, launchd, `gh` CLI
+**Cloud & Infra** · AWS, Docker, Docker Compose, Cloudflare (Workers, KV, Email Routing), Vercel, Supabase, GitHub Actions CI/CD, launchd, `gh` CLI
 
-**Testing** · Vitest, Pytest, Playwright, JUnit
+**Testing & Code Quality** · Pytest + pytest-cov, Vitest, Playwright, JUnit, Ruff, ESLint (flat config), isort
 
 **Payments** · Stripe (Checkout, Subscriptions, webhooks, credit systems)
+
+**Collaboration & Process** · Git, GitHub, PR-based review workflows, CI gates (lint + test + coverage), Agile / Scrum SDLC, code review as a maintainer
+
+> The backbone across my projects — FastAPI + PostgreSQL + React + TypeScript + Docker + GitHub Actions + Anthropic / OpenAI — is the common production stack for modern AI-native SaaS. I'm comfortable adding pieces I haven't shipped yet (SQLAlchemy, AWS ECS / SQS / EventBridge, Prometheus / Grafana / PostHog) given the adjacency to what I've already built.
 
 ---
 
